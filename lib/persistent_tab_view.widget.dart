@@ -15,9 +15,9 @@ class PersistentTabView extends PersistentTabViewBase {
       final Key? key,
       final List<PersistentBottomNavBarItem>? items,
       this.controller,
-      final double navBarHeight = kBottomNavigationBarHeight,
+      this.navBarHeight = kBottomNavigationBarHeight,
       this.margin = EdgeInsets.zero,
-      this.backgroundColor = CupertinoColors.white,
+      this.backgroundColor = Colors.transparent,
       final ValueChanged<int>? onItemSelected,
       final NeumorphicProperties? neumorphicProperties,
       this.floatingActionButton,
@@ -32,6 +32,7 @@ class PersistentTabView extends PersistentTabViewBase {
       final PopActionScreensType popActionScreens = PopActionScreensType.all,
       this.confineInSafeArea = true,
       this.onWillPop,
+      this.onItemTapped,
       this.stateManagement = true,
       this.handleAndroidBackButtonPress = true,
       final ItemAnimationProperties? itemAnimationProperties,
@@ -46,7 +47,9 @@ class PersistentTabView extends PersistentTabViewBase {
             "screens and items length should be same. If you are using the onPressed callback function of 'PersistentBottomNavBarItem', enter a dummy screen like Container() in its place in the screens"),
         assert(items!.length >= 2 && items.length <= 6,
             "NavBar should have at least 2 or maximum 6 items (Except for styles 15-18)"),
-        assert(handleAndroidBackButtonPress && onWillPop == null,
+        assert(
+            handleAndroidBackButtonPress && onWillPop == null ||
+                !handleAndroidBackButtonPress && onWillPop != null,
             "If you declare the onWillPop function, you will have to handle the back function functionality yourself as your onWillPop function will override the default function."),
         super(
           key: key,
@@ -72,6 +75,7 @@ class PersistentTabView extends PersistentTabViewBase {
           resizeToAvoidBottomInset: resizeToAvoidBottomInset,
           bottomScreenMargin: bottomScreenMargin,
           onWillPop: onWillPop,
+          onItemTapped: onItemTapped,
           isCustomWidget: false,
           confineInSafeArea: confineInSafeArea,
           stateManagement: stateManagement,
@@ -91,20 +95,24 @@ class PersistentTabView extends PersistentTabViewBase {
     this.floatingActionButton,
     this.resizeToAvoidBottomInset = false,
     this.bottomScreenMargin,
+    this.navBarHeight = 60,
     this.selectedTabScreenContext,
     this.hideNavigationBarWhenKeyboardShows = true,
-    this.backgroundColor = CupertinoColors.white,
+    this.backgroundColor = Colors.transparent,
     final CustomWidgetRouteAndNavigatorSettings routeAndNavigatorSettings =
         const CustomWidgetRouteAndNavigatorSettings(),
     this.confineInSafeArea = true,
     this.onWillPop,
+    this.onItemTapped,
     this.stateManagement = true,
     this.handleAndroidBackButtonPress = true,
     this.hideNavigationBar,
     this.screenTransitionAnimation = const ScreenTransitionAnimation(),
   })  : assert(itemCount == screens.length,
             "screens and items length should be same. If you are using the onPressed callback function of 'PersistentBottomNavBarItem', enter a dummy screen like Container() in its place in the screens"),
-        assert(handleAndroidBackButtonPress && onWillPop != null,
+        assert(
+            handleAndroidBackButtonPress && onWillPop == null ||
+                !handleAndroidBackButtonPress && onWillPop != null,
             "If you declare the onWillPop function, you will have to handle the back function functionality yourself as your onWillPop function will override the defualt function."),
         super(
           key: key,
@@ -119,7 +127,9 @@ class PersistentTabView extends PersistentTabViewBase {
           itemCount: itemCount,
           resizeToAvoidBottomInset: resizeToAvoidBottomInset,
           bottomScreenMargin: bottomScreenMargin,
+          navBarHeight: navBarHeight,
           onWillPop: onWillPop,
+          onItemTapped: onItemTapped,
           confineInSafeArea: confineInSafeArea,
           stateManagement: stateManagement,
           handleAndroidBackButtonPress: handleAndroidBackButtonPress,
@@ -148,7 +158,8 @@ class PersistentTabView extends PersistentTabViewBase {
   ///Specifies the navBarHeight
   ///
   ///Defaults to `kBottomNavigationBarHeight` which is `56.0`.
-  //final double navBarHeight;
+  @override
+  final double navBarHeight;
 
   ///The margin around the navigation bar.
   @override
@@ -181,6 +192,9 @@ class PersistentTabView extends PersistentTabViewBase {
   ///If you want to perform a custom action on Android when exiting the app, you can write your logic here. Returns context of the selected screen.
   @override
   final Future<bool> Function(BuildContext?)? onWillPop;
+
+  @override
+  final Function(int)? onItemTapped;
 
   ///Returns the context of the selected tab.
   @override
@@ -230,6 +244,7 @@ class PersistentTabViewBase extends StatefulWidget {
     this.popAllScreensOnTapAnyTabs,
     this.popActionScreens,
     this.onWillPop,
+    this.onItemTapped,
     this.hideNavigationBarWhenKeyboardShows,
     this.itemAnimationProperties,
     this.isCustomWidget,
@@ -316,6 +331,8 @@ class PersistentTabViewBase extends StatefulWidget {
   ///If you want to perform a custom action on Android when exiting the app, you can write your logic here.
   final Future<bool> Function(BuildContext)? onWillPop;
 
+  final Function(int)? onItemTapped;
+
   ///Screen transition animation properties when switching tabs.
   final ScreenTransitionAnimation? screenTransitionAnimation;
 
@@ -345,6 +362,7 @@ class PersistentTabViewBase extends StatefulWidget {
 class _PersistentTabViewState extends State<PersistentTabView> {
   late List<BuildContext?> _contextList;
   PersistentTabController? _controller;
+  DateTime? backButtonPressTime;
   double? _navBarHeight;
   int? _previousIndex;
   int? _currentIndex;
@@ -424,7 +442,10 @@ class _PersistentTabViewState extends State<PersistentTabView> {
                   _sendScreenContext = false;
                   widget.selectedTabScreenContext!(_contextList[index]);
                 }
-                return Material(child: widget.screens[index]);
+                return Material(
+                  color: Colors.transparent,
+                  child: widget.screens[index],
+                );
               },
             ),
           ),
@@ -450,7 +471,10 @@ class _PersistentTabViewState extends State<PersistentTabView> {
                   _sendScreenContext = false;
                   widget.selectedTabScreenContext!(_contextList[index]);
                 }
-                return Material(child: widget.screens[index]);
+                return Material(
+                  color: Colors.transparent,
+                  child: widget.screens[index],
+                );
               },
             ),
           ),
@@ -516,7 +540,10 @@ class _PersistentTabViewState extends State<PersistentTabView> {
                   _sendScreenContext = false;
                   widget.selectedTabScreenContext!(_contextList[index]);
                 }
-                return Material(child: widget.screens[index]);
+                return Material(
+                  color: Colors.transparent,
+                  child: widget.screens[index],
+                );
               },
             ),
           ),
@@ -575,7 +602,10 @@ class _PersistentTabViewState extends State<PersistentTabView> {
               _sendScreenContext = false;
               widget.selectedTabScreenContext!(_contextList[index]);
             }
-            return Material(child: widget.screens[index]);
+            return Material(
+              color: Colors.transparent,
+              child: widget.screens[index],
+            );
           });
     }
   }
@@ -687,7 +717,7 @@ class _PersistentTabViewState extends State<PersistentTabView> {
       return WillPopScope(
         onWillPop: !widget.handleAndroidBackButtonPress &&
                 widget.onWillPop != null
-            ? widget.onWillPop!(_contextList[_controller!.index])
+            ? (() => widget.onWillPop!(_contextList[_controller!.index]))
                 as Future<bool> Function()?
             : widget.handleAndroidBackButtonPress && widget.onWillPop != null
                 ? () async {
@@ -707,13 +737,43 @@ class _PersistentTabViewState extends State<PersistentTabView> {
                 : () async {
                     if (_controller!.index == 0 &&
                         !Navigator.canPop(_contextList.first!)) {
-                      return true;
+                      try {
+                        final now = DateTime.now();
+                        final backButtonHasNotBeenPressedOrSnackBarHasBeenClosed =
+                            backButtonPressTime == null ||
+                                now.difference(backButtonPressTime!) >
+                                    const Duration(seconds: 3);
+
+                        if (backButtonHasNotBeenPressedOrSnackBarHasBeenClosed) {
+                          backButtonPressTime = now;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              duration: const Duration(seconds: 2),
+                              elevation: 6,
+                              backgroundColor: Colors.grey[900],
+                              behavior: SnackBarBehavior.floating,
+                              content: const Text(
+                                "Press again to exit",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          );
+                          return false;
+                        }
+                        return true;
+                      } catch (e) {
+                        return false;
+                      }
                     } else {
                       if (Navigator.canPop(_contextList[_controller!.index]!)) {
                         Navigator.pop(_contextList[_controller!.index]!);
                       } else {
-                        widget.onItemSelected?.call(0);
-                        _controller!.index = 0;
+                        if (widget.onItemTapped != null) {
+                          widget.onItemTapped!(0);
+                        } else {
+                          widget.onItemSelected?.call(0);
+                          _controller!.index = 0;
+                        }
                       }
                       return false;
                     }
