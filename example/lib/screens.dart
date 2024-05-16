@@ -1,13 +1,14 @@
+// ignore_for_file: always_put_required_named_parameters_first
+
 import "package:flutter/material.dart";
 import "package:persistent_bottom_nav_bar/persistent_tab_view.dart";
 
-import "package:persistent_bottom_nav_bar_example_project/modal_screen.dart";
 
 class MainScreen extends StatelessWidget {
   const MainScreen(
-      {final Key key,
-      this.menuScreenContext,
-      this.onScreenHideButtonPressed,
+      {final Key? key,
+      required this.menuScreenContext,
+      required this.onScreenHideButtonPressed,
       this.hideStatus = false})
       : super(key: key);
   final BuildContext menuScreenContext;
